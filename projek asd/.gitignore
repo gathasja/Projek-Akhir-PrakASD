@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Streamlit Secrets (JANGAN UPLOAD API KEY KE GITHUB)
+.streamlit/secrets.toml
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
