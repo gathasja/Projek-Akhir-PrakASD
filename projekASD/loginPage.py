@@ -26,9 +26,9 @@ with col2:
     if st.button( "Login"):
         if username_input == st.session_state['username'] and password_input == st.session_state[ 'password' ]:
             st.session_state['logged_in' ] = True
-            st.switch_page("pages/homepage.py")
+            st.switch_page("homepage.py")
         else:
             st.error("Login gagal. Silakan coba lagi.")
 
     if st.session_state['logged_in' ]:
-        st.switch_page("pages/homepage.py")
+        st.switch_page("homepage.py")

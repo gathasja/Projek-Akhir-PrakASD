@@ -3,7 +3,7 @@ import streamlit as st
 import streamlit as st
 
 if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
-    st.switch_page("login.py")
+    st.switch_page("loginPage.py")
 
 st.title("My Profile")
 # Menampilkan username yang sedang aktif
@@ -22,4 +22,4 @@ if st.button("Ubah"):
             st.session_state['password'] = new_password
         
         st.success("Profile berhasil diperbarui!")
-        st.switch_page("pages/homepage.py")
+        st.switch_page("homepage.py")
