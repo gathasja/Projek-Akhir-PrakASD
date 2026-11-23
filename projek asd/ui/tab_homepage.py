@@ -1,6 +1,7 @@
 from datetime import datetime
 import streamlit as st
 from services.ai_service import rekomendasi_mood_ai
+from services.tmdb_service import ambil_katalog_tmdb
 
 
 def _tambah_ke_watchlist(film: dict):
@@ -8,6 +9,84 @@ def _tambah_ke_watchlist(film: dict):
     item_wl = film.copy()
     item_wl.setdefault("bulan_tonton", datetime.now().strftime("%b %Y"))
     st.session_state.watchlist.append(item_wl)
+
+
+def _cari_film_rekomendasi_tmdb(daftar_rekomendasi: list) -> list:
+    """Mengambil data kartu film lengkap dari TMDB berdasarkan judul rekomendasi AI."""
+    tmdb_key = str(st.secrets.get("TMDB_API_KEY", "")).strip()
+    if not tmdb_key or not daftar_rekomendasi:
+        return []
+
+    hasil_kartu = []
+    id_tercatat = set()
+
+    for item in daftar_rekomendasi[:3]:
+        judul_cari = str(item.get("judul", "")).strip()
+        tahun_cari = item.get("tahun")
+        if not judul_cari:
+            continue
+
+        kandidat = ambil_katalog_tmdb(judul_cari, [], tmdb_key)
+        if kandidat:
+            pilihan = kandidat[0]
+            if tahun_cari:
+                for f in kandidat:
+                    if str(f.get("tahun")) == str(tahun_cari):
+                        pilihan = f
+                        break
+            if pilihan["id"] not in id_tercatat:
+                id_tercatat.add(pilihan["id"])
+                hasil_kartu.append(pilihan)
+
+    return hasil_kartu
+
+
+def _render_grid_film(daftar_film: list, key_prefix: str):
+    """Merender daftar film dalam grid kartu 3 kolom lengkap dengan tombol Watchlist, Review, dan Detail."""
+    cols = st.columns(3, gap="medium")
+    watchlist = st.session_state.get("watchlist", [])
+
+    for idx, film in enumerate(daftar_film):
+        with cols[idx % 3]:
+            with st.container(border=True):
+                gambar_tampil = film.get("backdrop_url") or film.get("poster_url")
+                if gambar_tampil:
+                    st.image(gambar_tampil, use_container_width=True)
+
+                st.markdown(f"**{film['judul']} ({film['tahun']})**")
+                st.caption(f"{film['genre']} | {film['durasi_str']} | {film['rating_persen']}%")
+
+                sudah_ada = any(w["id"] == film["id"] for w in watchlist)
+                c_wl, c_rev, c_det = st.columns([1.25, 1, 0.95])
+
+                with c_wl:
+                    if st.button(
+                        "✔️ Saved" if sudah_ada else "+ Watchlist",
+                        key=f"{key_prefix}_wl_{film['id']}",
+                        disabled=sudah_ada,
+                        use_container_width=True,
+                    ):
+                        _tambah_ke_watchlist(film)
+                        st.toast(f"'{film['judul']}' masuk ke Watchlist!")
+                        st.rerun()
+
+                with c_rev:
+                    if st.button(
+                        "Review",
+                        key=f"{key_prefix}_rev_{film['id']}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.selected_movie = film
+                        st.toast(f"'{film['judul']}' dipilih! Klik tab Reviews di atas.")
+
+                with c_det:
+                    if st.button(
+                        "Detail",
+                        key=f"{key_prefix}_det_{film['id']}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.homepage_detail_movie = film
+                        st.rerun()
 
 
 def _render_detail_film_modal_view(film: dict):
@@ -64,24 +143,24 @@ def _render_detail_film_modal_view(film: dict):
                     st.toast(f"'{film['judul']}' dipilih! Silakan buka tab Reviews.")
 
 
-def render_tab_homepage(katalog_final: list, gemini_api_key: str):
+def render_tab_homepage(katalog_final: list):
     """
     Merender Tab Homepage (Tanggung Jawab Kevin Ariel Solomon - 71251208):
-    1. Area AI Mood & Story Matcher (Gemini AI) dengan input teks & tombol GO.
+    1. Area AI Mood & Story Matcher (bebas dari filter sidebar + langsung menampilkan kartu film rekomendasi).
     2. Area Film Catalogue (Filtered & Sorted) dalam grid kartu 3 kolom + tampilan detail film.
     """
     if st.session_state.get("homepage_detail_movie"):
         _render_detail_film_modal_view(st.session_state["homepage_detail_movie"])
         return
 
-    # 1. AREA AI MOOD & STORY MATCHER (GEMINI AI)
+    # 1. AREA AI MOOD & STORY MATCHER
     with st.container(border=True):
-        st.markdown("#### ✨ AI Mood & Story Matcher (Gemini AI)")
+        st.markdown("#### ✨ Cari Film Berdasarkan Moodmu Hari Ini disini")
         col_in, col_go = st.columns([5, 1])
         with col_in:
             mood_input = st.text_input(
-                "Ceritakan suasana hati (mood) atau tema cerita film yang kamu inginkan:",
-                placeholder="Contoh: Lagi pengen film animasi petualangan yang hangat dan menyentuh hati...",
+                "Ceritakan tema film yang kamu inginkan:",
+                placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan penuh intrik...",
                 label_visibility="collapsed",
                 key="input_mood_ai",
             )
@@ -89,18 +168,31 @@ def render_tab_homepage(katalog_final: list, gemini_api_key: str):
             klik_go = st.button("GO", type="primary", use_container_width=True)
 
         if klik_go:
-            if not katalog_final:
-                st.warning("Tidak ada film pada katalog saat ini untuk dianalisis AI. Coba atur ulang filter di sidebar.")
-            elif not mood_input.strip():
+            if not mood_input.strip():
                 st.warning("Tuliskan deskripsi mood atau tema cerita terlebih dahulu sebelum menekan GO.")
             else:
-                with st.spinner("Gemini AI sedang mencocokkan suasana hatimu dengan katalog film..."):
-                    st.session_state["hasil_ai_mood"] = rekomendasi_mood_ai(
-                        katalog_final, mood_input, gemini_api_key
-                    )
+                with st.spinner("Asisten sedang mencarikan rekomendasi film dan memuat katalognya..."):
+                    hasil_ai = rekomendasi_mood_ai(mood_input)
+                    st.session_state["hasil_ai_mood"] = hasil_ai["penjelasan"]
+                    if hasil_ai["sukses"]:
+                        st.session_state["hasil_ai_films"] = _cari_film_rekomendasi_tmdb(
+                            hasil_ai["daftar_film"]
+                        )
+                    else:
+                        st.session_state["hasil_ai_films"] = []
 
         if st.session_state.get("hasil_ai_mood"):
             st.info(st.session_state["hasil_ai_mood"])
+
+            film_ai = st.session_state.get("hasil_ai_films", [])
+            if film_ai:
+                st.markdown("##### 🎬 Katalog Film Rekomendasi AI")
+                _render_grid_film(film_ai, key_prefix="ai")
+
+            if st.button("Tutup Rekomendasi AI", key="btn_clear_ai"):
+                st.session_state["hasil_ai_mood"] = ""
+                st.session_state["hasil_ai_films"] = []
+                st.rerun()
 
     st.write("")
 
@@ -115,47 +207,4 @@ def render_tab_homepage(katalog_final: list, gemini_api_key: str):
         st.warning("Tidak ada film yang cocok dengan kriteria filter saat ini. Coba longgarkan filter di sidebar.")
         return
 
-    cols = st.columns(3, gap="medium")
-    watchlist = st.session_state.get("watchlist", [])
-
-    for idx, film in enumerate(katalog_final):
-        with cols[idx % 3]:
-            with st.container(border=True):
-                gambar_tampil = film.get("backdrop_url") or film.get("poster_url")
-                if gambar_tampil:
-                    st.image(gambar_tampil, use_container_width=True)
-
-                st.markdown(f"**{film['judul']} ({film['tahun']})**")
-                st.caption(f"{film['genre']} | {film['durasi_str']} | {film['rating_persen']}%")
-
-                sudah_ada = any(w["id"] == film["id"] for w in watchlist)
-                c_wl, c_rev, c_det = st.columns([1.25, 1, 0.95])
-
-                with c_wl:
-                    if st.button(
-                        "✔️ Saved" if sudah_ada else "+ Watchlist",
-                        key=f"home_wl_{film['id']}",
-                        disabled=sudah_ada,
-                        use_container_width=True,
-                    ):
-                        _tambah_ke_watchlist(film)
-                        st.toast(f"'{film['judul']}' masuk ke Watchlist!")
-                        st.rerun()
-
-                with c_rev:
-                    if st.button(
-                        "Review",
-                        key=f"home_rev_{film['id']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.selected_movie = film
-                        st.toast(f"'{film['judul']}' dipilih! Klik tab Reviews di atas.")
-
-                with c_det:
-                    if st.button(
-                        "Detail",
-                        key=f"home_det_{film['id']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.homepage_detail_movie = film
-                        st.rerun()
+    _render_grid_film(katalog_final, key_prefix="home")

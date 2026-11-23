@@ -1,16 +1,22 @@
 import streamlit as st
-from services.ai_service import analisis_review_ai
 
 
-def render_tab_review(katalog_final: list, gemini_api_key: str):
+def render_tab_review(katalog_final: list):
     """
     Merender Tab Reviews / Halaman Review Film (Tanggung Jawab Jannet Theodora - 71251173):
-    1. Pemilih film dari katalog/watchlist (otomatis terisi jika user klik tombol Review di Homepage).
-    2. Tampilan Poster + Detail Film + Analisis & Tanya Jawab Gemini AI.
+    1. Pemilih film dari katalog/watchlist/rekomendasi AI (otomatis terisi jika user klik tombol Review di Homepage).
+    2. Tampilan Poster + Detail Film.
     3. Form tulis review (Nama, Rating 0-100, Review, tombol Send).
     4. Container Other Reviews (disimpan dalam Dictionary berdasarkan movie_id).
     """
-    semua_film = {f["judul"]: f for f in (katalog_final + st.session_state.get("watchlist", []))}
+    semua_film = {
+        f["judul"]: f
+        for f in (
+            katalog_final
+            + st.session_state.get("watchlist", [])
+            + st.session_state.get("hasil_ai_films", [])
+        )
+    }
     if st.session_state.get("selected_movie"):
         sel = st.session_state["selected_movie"]
         semua_film[sel["judul"]] = sel
@@ -79,17 +85,3 @@ def render_tab_review(katalog_final: list, gemini_api_key: str):
                     st.markdown(f"**{rev['nama']} - {rev['rating']}%**")
                     st.write(rev["review"])
                     st.divider()
-
-        st.write("")
-
-        # ANALISIS & TANYA JAWAB GEMINI AI PADA HALAMAN REVIEW FILM (Tabel 2.3 Proposal)
-        with st.expander("🤖 Analisis & Tanya Jawab Gemini AI seputar Film Ini", expanded=True):
-            tanya_film = st.text_input(
-                "Ajukan pertanyaan spesifik tentang film ini (opsional):",
-                placeholder="Contoh: Apa kelebihan alur cerita film ini? Apakah cocok ditonton akhir pekan?",
-                key=f"tanya_ai_{film_aktif['id']}",
-            )
-            if st.button("Minta Analisis Gemini AI", key=f"btn_ai_rev_{film_aktif['id']}"):
-                with st.spinner("Gemini AI sedang menganalisis film..."):
-                    hasil = analisis_review_ai(film_aktif, tanya_film, gemini_api_key)
-                    st.info(hasil)

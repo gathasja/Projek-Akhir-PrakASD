@@ -45,7 +45,6 @@ st.markdown(
 )
 
 TMDB_KEY = st.secrets.get("TMDB_API_KEY", "")
-GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 # ==========================================
 # 2. INISIALISASI STRUKTUR DATA (SESSION STATE)
@@ -58,6 +57,8 @@ if "filter_stack_data" not in st.session_state:
     st.session_state.filter_stack_data = []
 if "watchlist" not in st.session_state:
     st.session_state.watchlist = []
+if "watched_films" not in st.session_state:
+    st.session_state.watched_films = []
 if "selected_movie" not in st.session_state:
     st.session_state.selected_movie = None
 if "homepage_detail_movie" not in st.session_state:
@@ -184,15 +185,15 @@ st.markdown('<div class="main-tagline">"Connecting you to the right story."</div
 
 tab_homepage, tab_watchlist, tab_reviews = st.tabs([
     "Homepage",
-    f"Watchlist ({len(st.session_state.watchlist)})",
+    "Watchlist",
     "Reviews",
 ])
 
 with tab_homepage:
-    render_tab_homepage(katalog_final, GEMINI_KEY)
+    render_tab_homepage(katalog_final)
 
 with tab_watchlist:
     render_tab_watchlist()
 
 with tab_reviews:
-    render_tab_review(katalog_final, GEMINI_KEY)
+    render_tab_review(katalog_final)
