@@ -168,7 +168,7 @@ def render_tab_homepage(katalog_final: list):
             klik_go = st.button("GO", type="primary", use_container_width=True)
 
         if klik_go:
-            st.info("masih tahap 1 ya bos, fiturnya bisa dipake tahap 3 nanti.")
+            st.info("masih tahap 1 ya bos, fiturnya baru dibuat di tahap 3 nantiii")
 
         if st.session_state.get("hasil_ai_mood"):
             st.info(st.session_state["hasil_ai_mood"])
@@ -186,7 +186,7 @@ def render_tab_homepage(katalog_final: list):
     st.write("")
 
     # 2. AREA FILM CATALOGUE (FILTERED & SORTED)
-    st.subheader("Film Catalogue (Filtered & Sorted)")
+    st.subheader("Katalog Film (Terfilter & Tersortir)")
 
     if st.session_state.get("tmdb_error"):
         st.error(f"⚠️ {st.session_state['tmdb_error']}")
