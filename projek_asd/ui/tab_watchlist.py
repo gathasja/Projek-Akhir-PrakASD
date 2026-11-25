@@ -146,11 +146,5 @@ def render_tab_watchlist():
     # 5. TOMBOL EKSPOR: EXPORT PDF (MEMUAT WATCHLIST & FILM SUDAH DITONTON)
     col_pdf, _ = st.columns([1.4, 3.6])
     with col_pdf:
-        st.download_button(
-            "📄 Export PDF",
-            data=ekspor_ke_pdf(wl, watched),
-            file_name="CineMatch_Watchlist.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True,
-        )
+        if st.button("📄 Export PDF", type="primary", use_container_width=True):
+            st.info("🛠️ Tahap 1 (UI/UX): Fitur Export PDF akan diintegrasikan pada Tahap 4.")

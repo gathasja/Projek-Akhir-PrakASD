@@ -106,7 +106,7 @@ def _render_detail_film_modal_view(film: dict):
         if film.get("poster_url"):
             st.image(film["poster_url"], use_container_width=True)
         else:
-            st.info("Poster tidak tersedia")
+            st.info("belum masang API tmbd yak bos, sabar")
 
     with col_detail:
         with st.container(border=True):
@@ -168,18 +168,7 @@ def render_tab_homepage(katalog_final: list):
             klik_go = st.button("GO", type="primary", use_container_width=True)
 
         if klik_go:
-            if not mood_input.strip():
-                st.warning("Tuliskan deskripsi mood atau tema cerita terlebih dahulu sebelum menekan GO.")
-            else:
-                with st.spinner("Asisten sedang mencarikan rekomendasi film dan memuat katalognya..."):
-                    hasil_ai = rekomendasi_mood_ai(mood_input)
-                    st.session_state["hasil_ai_mood"] = hasil_ai["penjelasan"]
-                    if hasil_ai["sukses"]:
-                        st.session_state["hasil_ai_films"] = _cari_film_rekomendasi_tmdb(
-                            hasil_ai["daftar_film"]
-                        )
-                    else:
-                        st.session_state["hasil_ai_films"] = []
+            st.info("masih tahap 1 ya bos, fiturnya bisa dipake tahap 3 nanti.")
 
         if st.session_state.get("hasil_ai_mood"):
             st.info(st.session_state["hasil_ai_mood"])
