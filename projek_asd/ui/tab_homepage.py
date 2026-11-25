@@ -106,7 +106,7 @@ def _render_detail_film_modal_view(film: dict):
         if film.get("poster_url"):
             st.image(film["poster_url"], use_container_width=True)
         else:
-            st.info("Poster tidak tersedia")
+            st.info("belum masang API tmbd yak bos, sabar")
 
     with col_detail:
         with st.container(border=True):
@@ -160,7 +160,7 @@ def render_tab_homepage(katalog_final: list):
         with col_in:
             mood_input = st.text_input(
                 "Ceritakan tema film yang kamu inginkan:",
-                placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan penuh intrik...",
+                placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan magical...",
                 label_visibility="collapsed",
                 key="input_mood_ai",
             )
@@ -168,18 +168,7 @@ def render_tab_homepage(katalog_final: list):
             klik_go = st.button("GO", type="primary", use_container_width=True)
 
         if klik_go:
-            if not mood_input.strip():
-                st.warning("Tuliskan deskripsi mood atau tema cerita terlebih dahulu sebelum menekan GO.")
-            else:
-                with st.spinner("Asisten sedang mencarikan rekomendasi film dan memuat katalognya..."):
-                    hasil_ai = rekomendasi_mood_ai(mood_input)
-                    st.session_state["hasil_ai_mood"] = hasil_ai["penjelasan"]
-                    if hasil_ai["sukses"]:
-                        st.session_state["hasil_ai_films"] = _cari_film_rekomendasi_tmdb(
-                            hasil_ai["daftar_film"]
-                        )
-                    else:
-                        st.session_state["hasil_ai_films"] = []
+            st.info("masih tahap 1 ya euy, fiturnya baru dibuat kapan2 kalau inget")
 
         if st.session_state.get("hasil_ai_mood"):
             st.info(st.session_state["hasil_ai_mood"])
@@ -197,14 +186,14 @@ def render_tab_homepage(katalog_final: list):
     st.write("")
 
     # 2. AREA FILM CATALOGUE (FILTERED & SORTED)
-    st.subheader("Film Catalogue (Filtered & Sorted)")
+    st.subheader("Katalog Film (Terfilter & Tersortir)")
 
     if st.session_state.get("tmdb_error"):
         st.error(f"⚠️ {st.session_state['tmdb_error']}")
         return
 
     if not katalog_final:
-        st.warning("Tidak ada film yang cocok dengan kriteria filter saat ini. Coba longgarkan filter di sidebar.")
+        st.warning("ga ada yang cocok ama filter auy. Coba bro, longgarin filter di sidebar.")
         return
 
     _render_grid_film(katalog_final, key_prefix="home")

@@ -42,10 +42,10 @@ def render_tab_watchlist():
             )
     with m2:
         with st.container(border=True):
-            st.metric("Average Score Rating", f"{avg_rating:.1f}%")
+            st.metric("Rata-Rata Rating", f"{avg_rating:.1f}%")
     with m3:
         with st.container(border=True):
-            st.metric("Average Film Duration", f"{avg_duration} mins")
+            st.metric("Rata-Rata Durasi Film", f"{avg_duration} mins")
 
     st.write("")
 
@@ -113,9 +113,9 @@ def render_tab_watchlist():
 
     # 4. CONTAINER BARU: FILM YANG SUDAH DITONTON
     with st.container(border=True):
-        st.subheader(f"🎬 Film yang sudah ditonton ({len(watched)})")
+        st.subheader(f"Film yang sudah ditonton ({len(watched)})")
         if not watched:
-            st.caption("Belum ada film yang ditandai selesai ditonton. Klik tombol **✅ Sudah Ditonton** pada daftar di atas.")
+            st.caption("Belum ada film yang selesai ditonton. Klik tombol **✅ Sudah Ditonton** pada daftar di atas.")
         else:
             for idx, item in enumerate(watched):
                 col_item, col_bulan, col_undo, col_del = st.columns([3.8, 1.1, 1.25, 0.9])
@@ -146,11 +146,5 @@ def render_tab_watchlist():
     # 5. TOMBOL EKSPOR: EXPORT PDF (MEMUAT WATCHLIST & FILM SUDAH DITONTON)
     col_pdf, _ = st.columns([1.4, 3.6])
     with col_pdf:
-        st.download_button(
-            "📄 Export PDF",
-            data=ekspor_ke_pdf(wl, watched),
-            file_name="CineMatch_Watchlist.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True,
-        )
+        if st.button("📄 Export PDF", type="primary", use_container_width=True):
+            st.info("🛠️ Tahap 1 (UI/UX): Fitur Export PDF akan diintegrasikan pada Tahap 4.")
