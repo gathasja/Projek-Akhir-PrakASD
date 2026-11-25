@@ -55,7 +55,7 @@ def render_tab_review(katalog_final: list):
             with st.form(key=f"form_review_{film_aktif['id']}"):
                 nama_reviewer = st.text_input("Nama", placeholder="Masukkan nama kamu...")
                 rating_reviewer = st.slider("Rating (0-100)", min_value=0, max_value=100, value=80)
-                teks_review = st.text_area("Review", placeholder="Tulis ulasan singkat atau detail mengenai film ini...")
+                teks_review = st.text_area("Ulasan", placeholder="Tulis ulasan singkat atau detail mengenai film ini...")
                 kirim_review = st.form_submit_button("Send", type="primary")
 
                 if kirim_review:
