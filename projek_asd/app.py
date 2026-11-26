@@ -75,7 +75,7 @@ with st.sidebar:
     st.text_input("Judul", placeholder="Cari judul film...")
     st.multiselect("Genre", options=["Animation", "Action", "Comedy", "Drama", "Science Fiction"], placeholder="Pilih genre...")
     st.slider("Durasi Film (menit)", 30, 240, (30, 240), step=5)
-    st.slider("Rating Rating (%)", 0, 100, 50, step=5)
+    st.slider("Rating Minimal (%)", 0, 100, 50, step=5)
     st.slider("Tahun Rilis", 1980, 2026, (1995, 2026))
     st.selectbox("Urutan", options=["Rating (Descending)", "Rating (Ascending)", "Release Year (Terbaru)"])
 
@@ -85,13 +85,13 @@ with st.sidebar:
     col_save, col_undo = st.columns(2)
     with col_save:
         if st.button("Simpan", use_container_width=True):
-            st.toast("Tampilan UI: Filter disimpan (Logika Stack diaktifkan pada Tahap 2).")
+            st.toast("Belum dibuat, minggu depan yah. 😅")
     with col_undo:
         if st.button("Batalkan", use_container_width=True):
-            st.toast("Tampilan UI: Undo filter (Logika Stack diaktifkan pada Tahap 2).")
+            st.toast("Belum dibuat, minggu depan yah. 😅")
 
     if st.button("🔄 Muat Ulang Data API", use_container_width=True):
-        st.toast("Tampilan UI: Koneksi API TMDB diaktifkan pada Tahap 2.")
+        st.toast("Belum dibuat, minggu depan yah. 😅")
 
 st.markdown('<div class="main-title">CineMatch</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-tagline">"Connecting you to the right story."</div>', unsafe_allow_html=True)
