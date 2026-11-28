@@ -49,10 +49,6 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
     for idx, film in enumerate(daftar_film):
         with cols[idx % 3]:
             with st.container(border=True):
-                gambar_tampil = film.get("backdrop_url") or film.get("poster_url")
-                if gambar_tampil:
-                    st.image(gambar_tampil, use_container_width=True)
-
                 st.markdown(f"**{film['judul']} ({film['tahun']})**")
                 st.caption(f"{film['genre']} | {film['durasi_str']} | {film['rating_persen']}%")
 
@@ -62,7 +58,7 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
                 with c_wl:
                     if st.button(
                         "✔️ Saved" if sudah_ada else "+ Watchlist",
-                        key=f"{key_prefix}_wl_{film['id']}",
+                        key=f"{key_prefix}_wl_{idx}_{film['id']}",
                         disabled=sudah_ada,
                         use_container_width=True,
                     ):
@@ -73,7 +69,7 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
                 with c_rev:
                     if st.button(
                         "Review",
-                        key=f"{key_prefix}_rev_{film['id']}",
+                        key=f"{key_prefix}_rev_{idx}_{film['id']}",
                         use_container_width=True,
                     ):
                         st.session_state.selected_movie = film
@@ -82,7 +78,7 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
                 with c_det:
                     if st.button(
                         "Detail",
-                        key=f"{key_prefix}_det_{film['id']}",
+                        key=f"{key_prefix}_det_{idx}_{film['id']}",
                         use_container_width=True,
                     ):
                         st.session_state.homepage_detail_movie = film
@@ -90,11 +86,7 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
 
 
 def _render_detail_film_modal_view(film: dict):
-    """
-    Tampilan detail film (sesuai Wireframe Halaman 9 Proposal):
-    Poster besar di kiri + Judul, Genre/Durasi/Rating, Synopsis lengkap,
-    tombol '+ Watchlist', tombol 'Review', dan tombol kembali ke katalog.
-    """
+    """Tampilan detail film: poster di kiri, informasi & tombol aksi di kanan."""
     if st.button("← Kembali ke Film Catalogue", key="btn_back_catalogue"):
         st.session_state.homepage_detail_movie = None
         st.rerun()
@@ -102,9 +94,10 @@ def _render_detail_film_modal_view(film: dict):
     st.write("")
     col_poster, col_detail = st.columns([1.05, 1.8], gap="large")
 
+    poster = film.get("poster_url") or film.get("poster")
     with col_poster:
-        if film.get("poster_url"):
-            st.image(film["poster_url"], use_container_width=True)
+        if poster:
+            st.image(poster, use_container_width=True)
         else:
             st.info("belum masang API tmbd yak bos, sabar")
 
@@ -144,11 +137,18 @@ def _render_detail_film_modal_view(film: dict):
 
 
 def render_tab_homepage(katalog_final: list):
-    """
-    Merender Tab Homepage (Tanggung Jawab Kevin Ariel Solomon - 71251208):
-    1. Area AI Mood & Story Matcher (bebas dari filter sidebar + langsung menampilkan kartu film rekomendasi).
-    2. Area Film Catalogue (Filtered & Sorted) dalam grid kartu 3 kolom + tampilan detail film.
-    """
+    """Merender Tab Homepage beserta sapaan pengguna dan tombol Logout."""
+    col_salam, col_logout = st.columns([5, 1], vertical_alignment="center")
+    with col_salam:
+        st.markdown(f"### Selamat datang, {st.session_state.get('username', 'Pengguna')}!")
+        st.caption("Anda telah berhasil masuk ke aplikasi CineMatch.")
+    with col_logout:
+        if st.button("Logout", key="btn_logout_home", use_container_width=True):
+            st.session_state["logged_in"] = False
+            st.rerun()
+
+    st.divider()
+
     if st.session_state.get("homepage_detail_movie"):
         _render_detail_film_modal_view(st.session_state["homepage_detail_movie"])
         return
@@ -158,7 +158,7 @@ def render_tab_homepage(katalog_final: list):
         st.markdown("#### ✨ Cari Film Berdasarkan Moodmu Hari Ini disini")
         col_in, col_go = st.columns([5, 1])
         with col_in:
-            mood_input = st.text_input(
+            st.text_input(
                 "Ceritakan tema film yang kamu inginkan:",
                 placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan penuh intrik...",
                 label_visibility="collapsed",

@@ -9,17 +9,11 @@ from utils.export_service import (
 
 
 def render_tab_watchlist():
-    """
-    Merender Tab Watchlist:
-    1. 3 Kartu Metrik: Total Films, Average Score Rating, Average Film Duration.
-    2. 2 Visualisasi Data Interaktif (Line Chart Durasi Bulanan & Pie Chart Genre).
-    3. Container 'My Watchlist' dengan tombol 'Sudah Ditonton' & 'Delete'.
-    4. Container 'Film yang sudah ditonton' dengan tombol 'Batal' & 'Delete'.
-    5. Tombol 'Export PDF' yang memuat kedua daftar film dalam tabel bertema CineMatch.
-    """
+    """Merender Tab Watchlist: metrik, grafik, daftar belum/sudah ditonton, dan tombol ekspor PDF."""
+    st.session_state.setdefault("watchlist", [])
     st.session_state.setdefault("watched_films", [])
-    wl = st.session_state.get("watchlist", [])
-    watched = st.session_state.get("watched_films", [])
+    wl = st.session_state["watchlist"]
+    watched = st.session_state["watched_films"]
 
     if not wl and not watched:
         st.info("Daftar Watchlist kamu masih kosong. Klik tombol **+ Watchlist** pada film di tab **Homepage**.")
@@ -27,7 +21,6 @@ def render_tab_watchlist():
 
     semua_film = wl + watched
 
-    # 1. 3 KOLOM METRIK RINGKASAN
     total_films = len(semua_film)
     avg_rating = sum(f["rating_persen"] for f in semua_film) / total_films
     avg_duration = int(sum(f["durasi"] for f in semua_film) / total_films)
@@ -49,7 +42,6 @@ def render_tab_watchlist():
 
     st.write("")
 
-    # 2. 2 KOLOM VISUALISASI DATA (Line Chart Durasi Bulanan & Pie Chart Genre)
     v1, v2 = st.columns(2, gap="medium")
     with v1:
         with st.container(border=True):
@@ -64,7 +56,6 @@ def render_tab_watchlist():
 
     st.write("")
 
-    # 3. CONTAINER MY WATCHLIST (BELUM DITONTON)
     bulan_default = datetime.now().strftime("%b %Y")
     with st.container(border=True):
         st.subheader(f"My Watchlist ({len(wl)})")
@@ -87,31 +78,30 @@ def render_tab_watchlist():
                         "Bulan Tonton",
                         options=opsi_bulan,
                         index=opsi_bulan.index(bulan_sekarang),
-                        key=f"bulan_wl_{item['id']}",
+                        key=f"bulan_wl_{idx}_{item['id']}",
                         label_visibility="collapsed",
                     )
                     if bulan_pilih != item.get("bulan_tonton"):
-                        st.session_state.watchlist[idx]["bulan_tonton"] = bulan_pilih
+                        st.session_state["watchlist"][idx]["bulan_tonton"] = bulan_pilih
                         st.rerun()
                 with col_done:
                     if st.button(
                         "✅ Sudah Ditonton",
-                        key=f"done_wl_{item['id']}",
+                        key=f"done_wl_{idx}_{item['id']}",
                         type="primary",
                         use_container_width=True,
                     ):
-                        film_selesai = st.session_state.watchlist.pop(idx)
-                        st.session_state.watched_films.append(film_selesai)
+                        film_selesai = st.session_state["watchlist"].pop(idx)
+                        st.session_state["watched_films"].append(film_selesai)
                         st.toast(f"'{film_selesai['judul']}' dipindahkan ke Film yang sudah ditonton!")
                         st.rerun()
                 with col_del:
-                    if st.button("Delete", key=f"del_wl_{item['id']}", use_container_width=True):
-                        st.session_state.watchlist.pop(idx)
+                    if st.button("Delete", key=f"del_wl_{idx}_{item['id']}", use_container_width=True):
+                        st.session_state["watchlist"].pop(idx)
                         st.rerun()
 
     st.write("")
 
-    # 4. CONTAINER BARU: FILM YANG SUDAH DITONTON
     with st.container(border=True):
         st.subheader(f"🎬 Film yang sudah ditonton ({len(watched)})")
         if not watched:
@@ -129,21 +119,20 @@ def render_tab_watchlist():
                 with col_undo:
                     if st.button(
                         "↩️ Batal",
-                        key=f"undo_watched_{item['id']}",
+                        key=f"undo_watched_{idx}_{item['id']}",
                         use_container_width=True,
                     ):
-                        film_kembali = st.session_state.watched_films.pop(idx)
-                        st.session_state.watchlist.append(film_kembali)
+                        film_kembali = st.session_state["watched_films"].pop(idx)
+                        st.session_state["watchlist"].append(film_kembali)
                         st.toast(f"'{film_kembali['judul']}' dikembalikan ke My Watchlist.")
                         st.rerun()
                 with col_del:
-                    if st.button("Delete", key=f"del_watched_{item['id']}", use_container_width=True):
-                        st.session_state.watched_films.pop(idx)
+                    if st.button("Delete", key=f"del_watched_{idx}_{item['id']}", use_container_width=True):
+                        st.session_state["watched_films"].pop(idx)
                         st.rerun()
 
     st.write("")
 
-    # 5. TOMBOL EKSPOR: EXPORT PDF (MEMUAT WATCHLIST & FILM SUDAH DITONTON)
     col_pdf, _ = st.columns([1.4, 3.6])
     with col_pdf:
         if st.button("📄 Export PDF", type="primary", use_container_width=True):

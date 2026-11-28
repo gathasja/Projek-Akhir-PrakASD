@@ -2,6 +2,7 @@ import streamlit as st
 from ui.tab_homepage import render_tab_homepage
 from ui.tab_watchlist import render_tab_watchlist
 from ui.tab_review import render_tab_review
+from ui.tab_profile import render_tab_profile
 
 st.set_page_config(
     page_title="CineMatch — Connecting you to the right story",
@@ -20,7 +21,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Data contoh (Dummy) khusus untuk demonstrasi tampilan Tahap 1
 DUMMY_FILMS = [
     {
         "id": 1,
@@ -32,8 +32,8 @@ DUMMY_FILMS = [
         "rating_persen": 78,
         "sutradara": "Byron Howard",
         "sinopsis": "Officer Judy Hopps bekerja sama dengan rubah cerdik Nick Wilde untuk memecahkan kasus hilangnya warga di kota Zootopia.",
-        "poster": "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfIYPvb4JVud.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/w780/9tOkjBE8ckgzModgV41n4lZ6072.jpg",
+        "poster_url": "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfIYPvb4JVud.jpg",
+        "backdrop_url": "https://image.tmdb.org/t/p/w780/9tOkjBE8ckgzModgV41n4lZ6072.jpg",
     },
     {
         "id": 2,
@@ -45,8 +45,8 @@ DUMMY_FILMS = [
         "rating_persen": 82,
         "sutradara": "Lee Unkrich",
         "sinopsis": "Miguel bermimpi menjadi musisi hebat dan tanpa sengaja memasuki Negeri Arwah untuk mengungkap kisah keluarganya.",
-        "poster": "https://image.tmdb.org/t/p/w500/gGEsBPAijhVUFoiNpgZXqRVWJt2.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/w780/askg3SMvhqEl4OL52YuvdtY40Yb.jpg",
+        "poster_url": "https://image.tmdb.org/t/p/w500/gGEsBPAijhVUFoiNpgZXqRVWJt2.jpg",
+        "backdrop_url": "https://image.tmdb.org/t/p/w780/askg3SMvhqEl4OL52YuvdtY40Yb.jpg",
     },
     {
         "id": 3,
@@ -58,19 +58,52 @@ DUMMY_FILMS = [
         "rating_persen": 84,
         "sutradara": "Christopher Nolan",
         "sinopsis": "Sekelompok penjelajah luar angkasa melewati lubang cacing demi mencari planet baru bagi kelangsungan hidup umat manusia.",
-        "poster": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/w780/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
+        "poster_url": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+        "backdrop_url": "https://image.tmdb.org/t/p/w780/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
     },
 ]
 
-st.session_state.setdefault("watchlist", [DUMMY_FILMS[0]])
+# Inisialisasi state akun & aplikasi
+st.session_state.setdefault("username", "admin")
+st.session_state.setdefault("password", "password")
+st.session_state.setdefault("logged_in", False)
+
+st.session_state.setdefault("watchlist", [DUMMY_FILMS[0].copy()])
 st.session_state.setdefault("watched_films", [])
 st.session_state.setdefault("selected_movie", None)
 st.session_state.setdefault("homepage_detail_movie", None)
 st.session_state.setdefault("user_reviews", {})
 
-# Sidebar UI Lengkap (Tahap 1)
+st.markdown('<div class="main-title">CineMatch</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-tagline">"Connecting you to the right story."</div>', unsafe_allow_html=True)
+
+# Halaman Login jika belum masuk
+if not st.session_state["logged_in"]:
+    _, col_login, _ = st.columns([1, 1.4, 1])
+    with col_login:
+        with st.container(border=True):
+            st.subheader("Halaman Login")
+            st.caption("Masukkan kredensial Anda untuk masuk.")
+            with st.form("form_login_cinematch"):
+                username_input = st.text_input("Username")
+                password_input = st.text_input("Password", type="password")
+                submit_login = st.form_submit_button("Login", type="primary", use_container_width=True)
+
+            if submit_login:
+                if (
+                    username_input == st.session_state["username"]
+                    and password_input == st.session_state["password"]
+                ):
+                    st.session_state["logged_in"] = True
+                    st.rerun()
+                else:
+                    st.error("Login gagal. Silakan coba lagi.")
+    st.stop()
+
+# Sidebar setelah login
 with st.sidebar:
+    st.markdown(f"👤 Masuk sebagai **{st.session_state['username']}**")
+    st.divider()
     st.markdown("### 🎬 Filter & Pencarian")
     st.text_input("Judul", placeholder="Cari judul film...")
     st.multiselect("Genre", options=["Animation", "Action", "Comedy", "Drama", "Science Fiction"], placeholder="Pilih genre...")
@@ -81,7 +114,6 @@ with st.sidebar:
 
     st.caption(f"Menampilkan {len(DUMMY_FILMS)} dari {len(DUMMY_FILMS)} film.")
 
-    # Tombol Save & Undo (Tampilan UI Tahap 1)
     col_save, col_undo = st.columns(2)
     with col_save:
         if st.button("Simpan", use_container_width=True):
@@ -93,10 +125,9 @@ with st.sidebar:
     if st.button("🔄 Muat Ulang Data API", use_container_width=True):
         st.toast("Tampilan UI: Koneksi API TMDB diaktifkan pada Tahap 2.")
 
-st.markdown('<div class="main-title">CineMatch</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-tagline">"Connecting you to the right story."</div>', unsafe_allow_html=True)
-
-tab_homepage, tab_watchlist, tab_reviews = st.tabs(["Homepage", "Watchlist", "Reviews"])
+tab_homepage, tab_watchlist, tab_reviews, tab_profile = st.tabs(
+    ["Homepage", "Watchlist", "Reviews", "Profile"]
+)
 
 with tab_homepage:
     render_tab_homepage(DUMMY_FILMS)
@@ -106,3 +137,6 @@ with tab_watchlist:
 
 with tab_reviews:
     render_tab_review(DUMMY_FILMS)
+
+with tab_profile:
+    render_tab_profile()
