@@ -1,11 +1,33 @@
-from datetime import datetime
+from datetime import date, datetime
 import streamlit as st
 from utils.export_service import (
-    DAFTAR_BULAN,
     buat_grafik_durasi_bulanan,
     buat_grafik_genre_pie,
     ekspor_ke_pdf,
 )
+
+
+def _parse_tanggal_item(item: dict, fallback_bulan: str) -> date:
+    """Mengambil objek date dari item watchlist/watched, dengan fallback aman."""
+    raw_tgl = item.get("tanggal_tonton")
+    if isinstance(raw_tgl, date) and not isinstance(raw_tgl, datetime):
+        return raw_tgl
+    if isinstance(raw_tgl, datetime):
+        return raw_tgl.date()
+    if isinstance(raw_tgl, str) and raw_tgl.strip():
+        try:
+            return datetime.strptime(raw_tgl.strip()[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    label_bulan = item.get("bulan_tonton") or fallback_bulan
+    for fmt in ("%b %Y", "%B %Y"):
+        try:
+            return datetime.strptime(label_bulan.strip(), fmt).date().replace(day=1)
+        except ValueError:
+            continue
+
+    return date.today()
 
 
 def render_tab_watchlist():
@@ -35,10 +57,10 @@ def render_tab_watchlist():
             )
     with m2:
         with st.container(border=True):
-            st.metric("Rata-Rata Rating", f"{avg_rating:.1f}%")
+            st.metric("Average Score Rating", f"{avg_rating:.1f}%")
     with m3:
         with st.container(border=True):
-            st.metric("Rata-Rata Durasi Film", f"{avg_duration} mins")
+            st.metric("Average Film Duration", f"{avg_duration} mins")
 
     st.write("")
 
@@ -63,26 +85,30 @@ def render_tab_watchlist():
             st.caption("Semua film di watchlist sudah selesai ditonton!")
         else:
             for idx, item in enumerate(wl):
-                col_item, col_bulan, col_done, col_del = st.columns([3.6, 1.2, 1.35, 0.9])
+                col_item, col_tgl, col_done, col_del = st.columns([3.4, 1.45, 1.3, 0.9])
                 with col_item:
                     st.markdown(
                         f"**{idx + 1}. {item['judul']}** | {item['genre']} | "
                         f"{item['durasi_str']} | **{item['rating_persen']}%**"
                     )
-                with col_bulan:
-                    bulan_sekarang = item.get("bulan_tonton") or bulan_default
-                    opsi_bulan = list(DAFTAR_BULAN)
-                    if bulan_sekarang not in opsi_bulan:
-                        opsi_bulan.append(bulan_sekarang)
-                    bulan_pilih = st.selectbox(
-                        "Bulan Tonton",
-                        options=opsi_bulan,
-                        index=opsi_bulan.index(bulan_sekarang),
-                        key=f"bulan_wl_{idx}_{item['id']}",
+                with col_tgl:
+                    tgl_saat_ini = _parse_tanggal_item(item, bulan_default)
+                    tgl_pilih = st.date_input(
+                        "Tanggal Tonton",
+                        value=tgl_saat_ini,
+                        min_value=date(1950, 1, 1),
+                        max_value=date(2035, 12, 31),
+                        key=f"tgl_wl_{idx}_{item['id']}",
                         label_visibility="collapsed",
                     )
-                    if bulan_pilih != item.get("bulan_tonton"):
-                        st.session_state["watchlist"][idx]["bulan_tonton"] = bulan_pilih
+                    tgl_str_baru = tgl_pilih.strftime("%Y-%m-%d")
+                    bulan_str_baru = tgl_pilih.strftime("%b %Y")
+                    if (
+                        item.get("tanggal_tonton") != tgl_str_baru
+                        or item.get("bulan_tonton") != bulan_str_baru
+                    ):
+                        st.session_state["watchlist"][idx]["tanggal_tonton"] = tgl_str_baru
+                        st.session_state["watchlist"][idx]["bulan_tonton"] = bulan_str_baru
                         st.rerun()
                 with col_done:
                     if st.button(
@@ -92,6 +118,9 @@ def render_tab_watchlist():
                         use_container_width=True,
                     ):
                         film_selesai = st.session_state["watchlist"].pop(idx)
+                        tgl_selesai = _parse_tanggal_item(film_selesai, bulan_default)
+                        film_selesai["tanggal_tonton"] = tgl_selesai.strftime("%Y-%m-%d")
+                        film_selesai["bulan_tonton"] = tgl_selesai.strftime("%b %Y")
                         st.session_state["watched_films"].append(film_selesai)
                         st.toast(f"'{film_selesai['judul']}' dipindahkan ke Film yang sudah ditonton!")
                         st.rerun()
@@ -103,19 +132,20 @@ def render_tab_watchlist():
     st.write("")
 
     with st.container(border=True):
-        st.subheader(f"Film yang sudah ditonton ({len(watched)})")
+        st.subheader(f"🎬 Film yang sudah ditonton ({len(watched)})")
         if not watched:
-            st.caption("Belum ada film yang selesai ditonton. Klik tombol **✅ Sudah Ditonton** pada daftar di atas.")
+            st.caption("Belum ada film yang ditandai selesai ditonton. Klik tombol **✅ Sudah Ditonton** pada daftar di atas.")
         else:
             for idx, item in enumerate(watched):
-                col_item, col_bulan, col_undo, col_del = st.columns([3.8, 1.1, 1.25, 0.9])
+                col_item, col_tgl, col_undo, col_del = st.columns([3.5, 1.4, 1.25, 0.9])
                 with col_item:
                     st.markdown(
                         f"✔️ **{idx + 1}. {item['judul']}** | {item['genre']} | "
                         f"{item['durasi_str']} | **{item['rating_persen']}%**"
                     )
-                with col_bulan:
-                    st.caption(f"📅 {item.get('bulan_tonton', bulan_default)}")
+                with col_tgl:
+                    tgl_tampil = item.get("tanggal_tonton") or item.get("bulan_tonton", bulan_default)
+                    st.caption(f"📅 {tgl_tampil}")
                 with col_undo:
                     if st.button(
                         "↩️ Batal",
@@ -136,4 +166,4 @@ def render_tab_watchlist():
     col_pdf, _ = st.columns([1.4, 3.6])
     with col_pdf:
         if st.button("📄 Export PDF", type="primary", use_container_width=True):
-            st.info("Tahap 1 (UI/UX): Fitur Export PDF baru bisa di Tahap 4.")
+            st.info("🛠️ Tahap 1 (UI/UX): Fitur Export PDF akan diintegrasikan pada Tahap 4.")
