@@ -4,6 +4,14 @@ from services.ai_service import rekomendasi_mood_ai
 from services.tmdb_service import ambil_katalog_tmdb
 
 
+def _buka_tab_review(film: dict):
+    """Menyimpan film terpilih dan langsung mengarahkan ke tab Reviews."""
+    st.session_state.selected_movie = film
+    st.session_state.homepage_detail_movie = None
+    st.session_state["_pending_tab"] = "Reviews"
+    st.rerun()
+
+
 def _tambah_ke_watchlist(film: dict):
     """Menambahkan salinan data film beserta bulan ditambahkan ke dalam session_state.watchlist."""
     item_wl = film.copy()
@@ -72,8 +80,7 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
                         key=f"{key_prefix}_rev_{idx}_{film['id']}",
                         use_container_width=True,
                     ):
-                        st.session_state.selected_movie = film
-                        st.toast(f"'{film['judul']}' dipilih! Klik tab Reviews di atas.")
+                        _buka_tab_review(film)
 
                 with c_det:
                     if st.button(
@@ -86,54 +93,43 @@ def _render_grid_film(daftar_film: list, key_prefix: str):
 
 
 def _render_detail_film_modal_view(film: dict):
-    """Tampilan detail film: poster di kiri, informasi & tombol aksi di kanan."""
+    """Tampilan detail film: informasi & tombol aksi."""
     if st.button("← Kembali ke Film Catalogue", key="btn_back_catalogue"):
         st.session_state.homepage_detail_movie = None
         st.rerun()
 
     st.write("")
-    col_poster, col_detail = st.columns([1.05, 1.8], gap="large")
+    with st.container(border=True):
+        st.markdown(f"## {film['judul']} ({film['tahun']})")
+        st.caption(f"{film['genre']}  |  {film['durasi_str']}  |  {film['rating_persen']}%")
+        st.markdown(f"**Sutradara:** {film.get('sutradara', '-')}")
+        st.markdown("### Synopsis")
+        st.write(film["sinopsis"])
 
-    poster = film.get("poster_url") or film.get("poster")
-    with col_poster:
-        if poster:
-            st.image(poster, use_container_width=True)
-        else:
-            st.info("belum masang API tmbd yak bos, sabar")
+        st.write("")
+        b1, b2 = st.columns(2)
+        watchlist = st.session_state.get("watchlist", [])
+        sudah_ada = any(w["id"] == film["id"] for w in watchlist)
 
-    with col_detail:
-        with st.container(border=True):
-            st.markdown(f"## {film['judul']} ({film['tahun']})")
-            st.caption(f"{film['genre']}  |  {film['durasi_str']}  |  {film['rating_persen']}%")
-            st.markdown(f"**Sutradara:** {film.get('sutradara', '-')}")
-            st.markdown("### Synopsis")
-            st.write(film["sinopsis"])
+        with b1:
+            if st.button(
+                "✔️ In Watchlist" if sudah_ada else "+ Watchlist",
+                key=f"detail_wl_{film['id']}",
+                disabled=sudah_ada,
+                type="primary",
+                use_container_width=True,
+            ):
+                _tambah_ke_watchlist(film)
+                st.toast(f"'{film['judul']}' ditambahkan ke Watchlist!")
+                st.rerun()
 
-            st.write("")
-            b1, b2 = st.columns(2)
-            watchlist = st.session_state.get("watchlist", [])
-            sudah_ada = any(w["id"] == film["id"] for w in watchlist)
-
-            with b1:
-                if st.button(
-                    "✔️ In Watchlist" if sudah_ada else "+ Watchlist",
-                    key=f"detail_wl_{film['id']}",
-                    disabled=sudah_ada,
-                    type="primary",
-                    use_container_width=True,
-                ):
-                    _tambah_ke_watchlist(film)
-                    st.toast(f"'{film['judul']}' ditambahkan ke Watchlist!")
-                    st.rerun()
-
-            with b2:
-                if st.button(
-                    "Review",
-                    key=f"detail_rev_{film['id']}",
-                    use_container_width=True,
-                ):
-                    st.session_state.selected_movie = film
-                    st.toast(f"'{film['judul']}' dipilih! Silakan buka tab Reviews.")
+        with b2:
+            if st.button(
+                "Review",
+                key=f"detail_rev_{film['id']}",
+                use_container_width=True,
+            ):
+                _buka_tab_review(film)
 
 
 def render_tab_homepage(katalog_final: list):
@@ -160,7 +156,7 @@ def render_tab_homepage(katalog_final: list):
         with col_in:
             st.text_input(
                 "Ceritakan tema film yang kamu inginkan:",
-                placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan magical...",
+                placeholder="Contoh: Lagi pengen film bertema kerajaan yang epik dan penuh intrik...",
                 label_visibility="collapsed",
                 key="input_mood_ai",
             )
@@ -168,7 +164,7 @@ def render_tab_homepage(katalog_final: list):
             klik_go = st.button("GO", type="primary", use_container_width=True)
 
         if klik_go:
-            st.info("masih tahap 1 ya euy, fiturnya baru dibuat kapan2 kalau inget")
+            st.info("masih tahap 1 ya bos, fiturnya baru dibuat di tahap 3 nantiii")
 
         if st.session_state.get("hasil_ai_mood"):
             st.info(st.session_state["hasil_ai_mood"])
@@ -193,7 +189,7 @@ def render_tab_homepage(katalog_final: list):
         return
 
     if not katalog_final:
-        st.warning("ga ada yang cocok ama filter auy. Coba bro, longgarin filter di sidebar.")
+        st.warning("Tidak ada film yang cocok dengan kriteria filter saat ini. Coba longgarkan filter di sidebar.")
         return
 
     _render_grid_film(katalog_final, key_prefix="home")

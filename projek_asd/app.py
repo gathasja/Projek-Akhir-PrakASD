@@ -67,6 +67,9 @@ DUMMY_FILMS = [
 st.session_state.setdefault("username", "admin")
 st.session_state.setdefault("password", "password")
 st.session_state.setdefault("logged_in", False)
+st.session_state.setdefault("active_tab", "Homepage")
+st.session_state.setdefault("nav_tabs_cinematch", st.session_state["active_tab"])
+st.session_state.setdefault("_pending_tab", None)
 
 st.session_state.setdefault("watchlist", [DUMMY_FILMS[0].copy()])
 st.session_state.setdefault("watched_films", [])
@@ -95,6 +98,9 @@ if not st.session_state["logged_in"]:
                     and password_input == st.session_state["password"]
                 ):
                     st.session_state["logged_in"] = True
+                    st.session_state["active_tab"] = "Homepage"
+                    st.session_state["nav_tabs_cinematch"] = "Homepage"
+                    st.session_state["_pending_tab"] = None
                     st.rerun()
                 else:
                     st.error("Login gagal. Silakan coba lagi.")
@@ -108,7 +114,7 @@ with st.sidebar:
     st.text_input("Judul", placeholder="Cari judul film...")
     st.multiselect("Genre", options=["Animation", "Action", "Comedy", "Drama", "Science Fiction"], placeholder="Pilih genre...")
     st.slider("Durasi Film (menit)", 30, 240, (30, 240), step=5)
-    st.slider("Rating Minimal (%)", 0, 100, 50, step=5)
+    st.slider("Rating Rating (%)", 0, 100, 50, step=5)
     st.slider("Tahun Rilis", 1980, 2026, (1995, 2026))
     st.selectbox("Urutan", options=["Rating (Descending)", "Rating (Ascending)", "Release Year (Terbaru)"])
 
@@ -117,26 +123,39 @@ with st.sidebar:
     col_save, col_undo = st.columns(2)
     with col_save:
         if st.button("Simpan", use_container_width=True):
-            st.toast("Belum dibuat, minggu depan yah. 😅")
+            st.toast("Tampilan UI: Filter disimpan (Logika Stack diaktifkan pada Tahap 2).")
     with col_undo:
         if st.button("Batalkan", use_container_width=True):
-            st.toast("Belum dibuat, minggu depan yah. 😅")
+            st.toast("Tampilan UI: Undo filter (Logika Stack diaktifkan pada Tahap 2).")
 
     if st.button("🔄 Muat Ulang Data API", use_container_width=True):
-        st.toast("Belum dibuat, minggu depan yah. 😅")
+        st.toast("Tampilan UI: Koneksi API TMDB diaktifkan pada Tahap 2.")
 
-tab_homepage, tab_watchlist, tab_reviews, tab_profile = st.tabs(
-    ["Homepage", "Watchlist", "Reviews", "Profile"]
+# Sinkronkan perpindahan tab terprogram sebelum widget segmented_control di-render
+if st.session_state.get("_pending_tab"):
+    st.session_state["active_tab"] = st.session_state["_pending_tab"]
+    st.session_state["nav_tabs_cinematch"] = st.session_state["_pending_tab"]
+    st.session_state["_pending_tab"] = None
+
+daftar_tab = ["Homepage", "Watchlist", "Reviews", "Profile"]
+tab_terpilih = st.segmented_control(
+    "Navigasi",
+    options=daftar_tab,
+    key="nav_tabs_cinematch",
+    label_visibility="collapsed",
 )
 
-with tab_homepage:
+if tab_terpilih and tab_terpilih != st.session_state["active_tab"]:
+    st.session_state["active_tab"] = tab_terpilih
+    st.rerun()
+
+st.divider()
+
+if st.session_state["active_tab"] == "Homepage":
     render_tab_homepage(DUMMY_FILMS)
-
-with tab_watchlist:
+elif st.session_state["active_tab"] == "Watchlist":
     render_tab_watchlist()
-
-with tab_reviews:
+elif st.session_state["active_tab"] == "Reviews":
     render_tab_review(DUMMY_FILMS)
-
-with tab_profile:
+elif st.session_state["active_tab"] == "Profile":
     render_tab_profile()
